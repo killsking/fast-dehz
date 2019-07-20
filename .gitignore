@@ -1,0 +1,7 @@
+*.bmp
+*.jpg
+*.mov
+
+input
+
+__pycache__

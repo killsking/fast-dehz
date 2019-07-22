@@ -59,6 +59,54 @@ def dehz(im, depth=None, w=0.8):
 
     return cv.normalize(R, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
 
+# with motion estimation
+def dehz_me(im, im_n, T, depth=None, w=0.8):
+    assert w > 0
+    block_num = 16
+    block_h = im.shape[0] // block_num
+    block_w = im.shape[1] // block_num
+    threshold = block_h * block_w * 3
+
+    # normalize and invert
+    R = 1 - cv.normalize(im.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
+
+    # cnt = 0
+
+    if depth is None:
+        # erode to avoid over exposure
+        kernel = np.ones((7,7), np.uint8)
+        R_d = cv.erode(R, kernel)
+
+        # macroblocks
+        if T is None:
+            T = 1 - w * np.min(R_d, axis=2)
+            # cnt += block_num * block_num
+        else:
+            for i in range(block_num):
+                for j in range(block_num):
+                    mb = im[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
+                    mb_n = im_n[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
+                    if np.sum(cv.absdiff(mb, mb_n)) > threshold:
+                        # print('recalculated')
+                        # cnt += 1
+                        mb_r = R_d[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
+                        T[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w] = 1 - w * np.min(mb_r, axis=2)
+
+    else:
+        depth_map = cv.normalize(depth.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
+
+        kernel = np.ones((7,7), np.uint8)
+        depth_map = cv.erode(depth_map, kernel)
+
+        T = 1 - w * depth_map # TODO: w
+
+    # print(cnt)
+    # restore
+    for k in range(R.shape[2]):
+        R[:, :, k] = 1 - ((R[:, :, k] - 1) / T + 1)
+
+    return cv.normalize(R, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8), T
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')

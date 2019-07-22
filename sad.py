@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 import argparse
 
-from dehz import dehz
+from dehz import dehz_me
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('video_path')
@@ -16,23 +16,29 @@ if with_depth:
 
 runtime = 0.0
 frame_count = 0
+last_frame = None
+T = None
 while(cap_v.isOpened()):
-    frame = cap_v.read()[1]
+    ret, frame = cap_v.read()
+    if ret == False:
+        break
+
     frame_count += 1
     if with_depth:
         depth = cap_d.read()[1]
         depth = cv.cvtColor(depth, cv.COLOR_BGR2GRAY)
 
         e1 = cv.getTickCount()
-        frame = dehz(frame, depth)
+        new_frame, T = dehz_me(frame, last_frame, T, depth)
         e2 = cv.getTickCount()
 
     else:
         e1 = cv.getTickCount()
-        frame = dehz(frame)
+        new_frame, T = dehz_me(frame, last_frame, T)
         e2 = cv.getTickCount()
 
-    cv.imshow('frame', frame)
+    last_frame = frame
+    cv.imshow('frame', new_frame)
     runtime += (e2 - e1) / cv.getTickFrequency()
 
     if cv.waitKey(1) & 0xFF == ord('q'):

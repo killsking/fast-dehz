@@ -3,6 +3,7 @@ import cv2 as cv
 import argparse
 
 from dehz import dehz
+from gamma import adjust_gamma
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('video_path')
@@ -17,7 +18,10 @@ if with_depth:
 runtime = 0.0
 frame_count = 0
 while(cap_v.isOpened()):
-    frame = cap_v.read()[1]
+    ret, frame = cap_v.read()
+    if ret == False:
+        break
+
     frame_count += 1
     if with_depth:
         depth = cap_d.read()[1]
@@ -29,7 +33,8 @@ while(cap_v.isOpened()):
 
     else:
         e1 = cv.getTickCount()
-        frame = dehz(frame)
+        frame = adjust_gamma(frame, 1.5)
+        # frame = dehz(frame)
         e2 = cv.getTickCount()
 
     cv.imshow('frame', frame)

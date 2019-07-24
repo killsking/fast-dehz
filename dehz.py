@@ -12,8 +12,8 @@ def dehz(im, depth=None, w=0.8):
 
     # invert
     R = 1 - im_n
-    # S = np.sum(R, axis=2)
-    # num = int(S.size * 0.002) # empirical
+    S = np.sum(R, axis=2)
+    num = int(S.size * 0.002) # empirical
 
     if depth is None:
         # erode to avoid over exposure
@@ -21,17 +21,17 @@ def dehz(im, depth=None, w=0.8):
         R_d = cv.erode(R, kernel)
 
         # calculate global atmosphere light A
-        # M = np.min(R_d, axis=2)
-        # M_s = set(heapq.nlargest(num, M.ravel()))
-        # maxS = 0
-        # for index, m in np.ndenumerate(M):
-        #     if m in M_s and S[index] > maxS:
-        #         maxS = S[index]
-        #         A = R_d[index]
+        M = np.min(R_d, axis=2)
+        M_s = set(heapq.nlargest(num, M.ravel()))
+        maxS = 0
+        for index, m in np.ndenumerate(M):
+            if m in M_s and S[index] > maxS:
+                maxS = S[index]
+                A = R_d[index]
 
-        # A = np.ones(3, dtype=float)
+        A = np.ones(3, dtype=float)
 
-        T = 1 - w * np.min(R_d, axis=2)
+        T = 1 - w * np.min(R_d / A, axis=2)
         # for row in T:
         #     for t in row:
         #         if t < 0.5:
@@ -46,7 +46,7 @@ def dehz(im, depth=None, w=0.8):
 
     # restore
     for k in range(R.shape[2]):
-        R[:, :, k] = 1 - ((R[:, :, k] - 1) / T + 1)
+        R[:, :, k] = 1 - ((R[:, :, k] - A[k]) / T + A[k])
         
     # for i in range(R.shape[0]):
     #     for j in range(R.shape[1]):

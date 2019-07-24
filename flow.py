@@ -33,8 +33,8 @@ while(cap_v.isOpened()):
 
     else:
         e1 = cv.getTickCount()
-        frame = adjust_gamma(frame, 1.5)
-        # frame = dehz(frame)
+        # frame = adjust_gamma(frame, 1.5)
+        frame = dehz(frame)
         e2 = cv.getTickCount()
 
     cv.imshow('frame', frame)

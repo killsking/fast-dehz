@@ -38,14 +38,14 @@ while(cap_v.isOpened()):
         e2 = cv.getTickCount()
 
     last_frame = frame
-    cv.imshow('frame', new_frame)
+    # cv.imshow('frame', new_frame)
     runtime += (e2 - e1) / cv.getTickFrequency()
 
-    if cv.waitKey(1) & 0xFF == ord('q'):
-        break
+    # if cv.waitKey(1) & 0xFF == ord('q'):
+    #     break
 
 print('average runtime: %.5fs' % (runtime / frame_count))
 cap_v.release()
 if with_depth:
     cap_d.release()
-cv.destroyAllWindows()
+# cv.destroyAllWindows()

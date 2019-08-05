@@ -12,8 +12,8 @@ def dehz(im, depth=None, w=0.8):
 
     # invert
     R = 1 - im_n
-    S = np.sum(R, axis=2)
-    num = int(S.size * 0.002) # empirical
+    # S = np.sum(R, axis=2)
+    # num = int(S.size * 0.002) # empirical
 
     if depth is None:
         # erode to avoid over exposure
@@ -21,17 +21,17 @@ def dehz(im, depth=None, w=0.8):
         R_d = cv.erode(R, kernel)
 
         # calculate global atmosphere light A
-        M = np.min(R_d, axis=2)
-        M_s = set(heapq.nlargest(num, M.ravel()))
-        maxS = 0
-        for index, m in np.ndenumerate(M):
-            if m in M_s and S[index] > maxS:
-                maxS = S[index]
-                A = R_d[index]
+        # M = np.min(R_d, axis=2)
+        # M_s = set(heapq.nlargest(num, M.ravel()))
+        # maxS = 0
+        # for index, m in np.ndenumerate(M):
+        #     if m in M_s and S[index] > maxS:
+        #         maxS = S[index]
+        #         A = R_d[index]
 
-        A = np.ones(3, dtype=float)
-        print(A)
-        T = 1 - w * np.min(R_d / A, axis=2)
+        # A = np.ones(3, dtype=float)
+
+        T = 1 - w * np.min(R_d, axis=2)
         # for row in T:
         #     for t in row:
         #         if t < 0.5:
@@ -42,10 +42,8 @@ def dehz(im, depth=None, w=0.8):
         kernel = np.ones((7,7), np.uint8)
         depth_map = cv.erode(depth_map, kernel)
 
-        T = 1 - 100000000000000 * depth_map # TODO: w
+        T = 1 - w * depth_map # TODO: w
 
-    Tp = cv.normalize(T, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
-    cv.imwrite('illum_map.bmp', Tp)
     # restore
     for k in range(R.shape[2]):
         R[:, :, k] = 1 - ((R[:, :, k] - 1) / T + 1)
@@ -111,7 +109,7 @@ def dehz_me(im, im_n, T, depth=None, w=0.8):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('image_path')
     parser.add_argument('depth_path', nargs='?')
     args = parser.parse_args()
@@ -129,8 +127,7 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imwrite('output.bmp', im1)
-        # cv.imshow('withdepth', im1)
+        cv.imshow('withdepth', im1)
         
     else:
         e1 = cv.getTickCount()
@@ -140,7 +137,7 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imwrite('output.bmp', im2)
-        # cv.imshow('withoutdepth', im2)
+        cv.imshow('withoutdepth', im2)
 
     cv.waitKey(0)
+    # cv.imwrite('output.jpg', im)

@@ -1,8 +1,10 @@
 *.bmp
 *.jpg
+*.png
 *.mov
 *.cmd
 
 input
+output
 
 __pycache__

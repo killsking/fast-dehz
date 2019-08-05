@@ -8,7 +8,7 @@ def adjust_gamma(image, gamma=1.0):
 
    return cv.LUT(image, table)
 
-if __name__ == "__main__":
+def main():
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
     gamma = 0.1
     for i in range(1, 10):
@@ -30,3 +30,8 @@ if __name__ == "__main__":
         cap.release()
 
         gamma += 0.1
+
+if __name__ == "__main__":
+    im = cv.imread('0.jpg')
+    im = adjust_gamma(im, 0.3)
+    cv.imwrite('g03.jpg', im)

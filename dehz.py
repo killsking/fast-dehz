@@ -30,7 +30,7 @@ def dehz(im, depth=None, w=0.8):
                 A = R_d[index]
 
         A = np.ones(3, dtype=float)
-
+        print(A)
         T = 1 - w * np.min(R_d / A, axis=2)
         # for row in T:
         #     for t in row:
@@ -42,11 +42,13 @@ def dehz(im, depth=None, w=0.8):
         kernel = np.ones((7,7), np.uint8)
         depth_map = cv.erode(depth_map, kernel)
 
-        T = 1 - w * depth_map # TODO: w
+        T = 1 - 100000000000000 * depth_map # TODO: w
 
+    Tp = cv.normalize(T, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
+    cv.imwrite('illum_map.bmp', Tp)
     # restore
     for k in range(R.shape[2]):
-        R[:, :, k] = 1 - ((R[:, :, k] - A[k]) / T + A[k])
+        R[:, :, k] = 1 - ((R[:, :, k] - 1) / T + 1)
         
     # for i in range(R.shape[0]):
     #     for j in range(R.shape[1]):
@@ -109,7 +111,7 @@ def dehz_me(im, im_n, T, depth=None, w=0.8):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser()
     parser.add_argument('image_path')
     parser.add_argument('depth_path', nargs='?')
     args = parser.parse_args()
@@ -127,7 +129,8 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imshow('withdepth', im1)
+        cv.imwrite('output.bmp', im1)
+        # cv.imshow('withdepth', im1)
         
     else:
         e1 = cv.getTickCount()
@@ -137,7 +140,7 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imshow('withoutdepth', im2)
+        cv.imwrite('output.bmp', im2)
+        # cv.imshow('withoutdepth', im2)
 
     cv.waitKey(0)
-    # cv.imwrite('output.jpg', im)

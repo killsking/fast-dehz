@@ -2,11 +2,11 @@ import numpy as np
 import cv2 as cv
 
 def adjust_gamma(image, gamma=1.0):
-   invGamma = 1.0 / gamma
-   table = np.array([((i / 255.0) ** invGamma) * 255
-      for i in np.arange(0, 256)]).astype("uint8")
+    # invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** gamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
 
-   return cv.LUT(image, table)
+    return cv.LUT(image, table)
 
 def main():
     fourcc = cv.VideoWriter_fourcc(*'mp4v')
@@ -33,5 +33,14 @@ def main():
 
 if __name__ == "__main__":
     im = cv.imread('0.jpg')
-    im = adjust_gamma(im, 0.3)
-    cv.imwrite('g03.jpg', im)
+    gamma = 2.5
+    # im = adjust_gamma(im, gamma)
+    im = im / gamma
+    cv.imwrite('g004.jpg', im)
+    cv.imshow('bad', im)
+
+    # im = adjust_gamma(im, 1 / gamma)
+    im = im * gamma
+    cv.imshow('good', im)
+    
+    cv.waitKey()

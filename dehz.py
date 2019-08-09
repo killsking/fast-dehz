@@ -8,30 +8,31 @@ def dehz(im, depth=None, w=0.8):
 
     # normalize
     # if np.max(im.ravel() > 1):
-    im_n = cv.normalize(im.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
+    L = cv.normalize(im.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
 
     # invert
-    R = 1 - im_n
-    S = np.sum(R, axis=2)
-    num = int(S.size * 0.002) # empirical
+    L_inv = 1 - L
+    # S = np.sum(R, axis=2)
+    # num = int(S.size * 0.002) # empirical
 
     if depth is None:
-        # erode to avoid over exposure
-        kernel = np.ones((7,7), np.uint8)
-        R_d = cv.erode(R, kernel)
+        # kernel = np.ones((7,7), np.uint8)
+        # L_inv = cv.erode(L_inv, kernel)
 
         # calculate global atmosphere light A
-        M = np.min(R_d, axis=2)
-        M_s = set(heapq.nlargest(num, M.ravel()))
-        maxS = 0
-        for index, m in np.ndenumerate(M):
-            if m in M_s and S[index] > maxS:
-                maxS = S[index]
-                A = R_d[index]
+        # M = np.min(L_inv, axis=2)
+        # M_s = set(heapq.nlargest(num, M.ravel()))
+        # maxS = 0
+        # for index, m in np.ndenumerate(M):
+        #     if m in M_s and S[index] > maxS:
+        #         maxS = S[index]
+        #         A = L_inv[index]
+                # coord = index
 
-        A = np.ones(3, dtype=float)
-        print(A)
-        T = 1 - w * np.min(R_d / A, axis=2)
+        # A = np.ones(3, dtype=float)
+        # print(A, coord)
+        T = 1 - w * np.min(L_inv, axis=2)
+        # T = 1 - w * L_inv[:, :, 2]
         # for row in T:
         #     for t in row:
         #         if t < 0.5:
@@ -42,56 +43,51 @@ def dehz(im, depth=None, w=0.8):
         kernel = np.ones((7,7), np.uint8)
         depth_map = cv.erode(depth_map, kernel)
 
-        T = 1 - 100000000000000 * depth_map # TODO: w
+        T = 1 - w * depth_map # TODO: w
 
-    Tp = cv.normalize(T, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
-    cv.imwrite('illum_map.bmp', Tp)
+    # Tp = cv.normalize(T, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
+
     # restore
-    for k in range(R.shape[2]):
-        R[:, :, k] = 1 - ((R[:, :, k] - 1) / T + 1)
-        
-    # for i in range(R.shape[0]):
-    #     for j in range(R.shape[1]):
-    #         R[i, j] -= A
-    # for k in range(R.shape[2]):
-    #     R[:, :, k] /= T
-    # for i in range(R.shape[0]):
-    #     for j in range(R.shape[1]):
-    #         R[i, j] = 1 - (R[i, j] + A)
+    R = np.zeros(L.shape, dtype=np.float32)
+    for k in range(3):
+        # R[:, :, k] = 1 - ((R[:, :, k] - A[k]) / T + A[k])
+        R[:, :, k] = L[:, :, k] / T
 
     return cv.normalize(R, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
 
 # with motion estimation
 def dehz_me(im, im_n, T, depth=None, w=0.8):
     assert w > 0
-    block_num = 16
-    block_h = im.shape[0] // block_num
-    block_w = im.shape[1] // block_num
-    threshold = block_h * block_w * 3
+
+    div = 16
+    # gop = 30
+
+    block_h = im.shape[0] // div
+    block_w = im.shape[1] // div
+    threshold = block_h * block_w * 3 # parameter
 
     # normalize and invert
-    R = 1 - cv.normalize(im.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
+    L_inv = 1 - cv.normalize(im.astype('float'), None, 0.0, 1.0, cv.NORM_MINMAX)
 
     # cnt = 0
 
     if depth is None:
-        # erode to avoid over exposure
         kernel = np.ones((7,7), np.uint8)
-        R_d = cv.erode(R, kernel)
+        L_inv = cv.erode(L_inv, kernel)
 
         # macroblocks
+        # if cnt % gop == 0:
         if T is None:
-            T = 1 - w * np.min(R_d, axis=2)
-            # cnt += block_num * block_num
+            T = 1 - w * np.min(L_inv, axis=2)
+            # cnt += div * div
         else:
-            for i in range(block_num):
-                for j in range(block_num):
+            for i in range(div):
+                for j in range(div):
                     mb = im[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
                     mb_n = im_n[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
                     if np.sum(cv.absdiff(mb, mb_n)) > threshold:
-                        # print('recalculated')
                         # cnt += 1
-                        mb_r = R_d[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
+                        mb_r = L_inv[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w]
                         T[i * block_h : (i + 1) * block_h, j * block_w : (j + 1) * block_w] = 1 - w * np.min(mb_r, axis=2)
 
     else:
@@ -129,8 +125,8 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imwrite('output.bmp', im1)
-        # cv.imshow('withdepth', im1)
+        # cv.imwrite('output.bmp', im1)
+        cv.imshow('withdepth', im1)
         
     else:
         e1 = cv.getTickCount()
@@ -140,7 +136,13 @@ if __name__ == "__main__":
         t = (e2 - e1) / cv.getTickFrequency()
         print(t) 
 
-        cv.imwrite('output.bmp', im2)
-        # cv.imshow('withoutdepth', im2)
+        # cv.imwrite('output.bmp', im2)
+        cv.imshow('withoutdepth', im2)
+        # im3 = dehz(im2)
+        # cv.imshow('im3', im3)
+        # im4 = dehz(im3)
+        # cv.imshow('im4', im4)
+        # im5 = dehz(im4)
+        # cv.imshow('im5', im5)
 
     cv.waitKey(0)

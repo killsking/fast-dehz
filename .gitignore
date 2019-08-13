@@ -1,8 +1,11 @@
 *.bmp
 *.jpg
+
 *.mov
+
 *.cmd
 
 input
+output
 
 __pycache__

@@ -78,6 +78,9 @@ def restore(I, m, n):
 def hard_threshold(S):
     value = 0.5 * (np.std(S) ** 2)
     S2 = 0.5 * np.square(S)
+    # kernel = np.ones((7,7), np.uint8)
+    # S2 = cv.erode(S2, kernel)
+    # S2 = cv.morphologyEx(S2, cv.MORPH_OPEN, kernel)
     ret, O = cv.threshold(S2, value, 1.0, cv.THRESH_BINARY)
     return O
 
@@ -95,13 +98,13 @@ def save_mov(V, fn):
     out.release()
     
 if __name__ == "__main__":
-    cap = cv.VideoCapture('input/quick.mov')
+    cap = cv.VideoCapture('input/videos/quick.mov')
 
     # get first 100 frames
     V = []
     # while (cap.isOpened()):
     for i in range(100):
-        ret, frame = cap.read(0)
+        ret, frame = cap.read()
         if ret == False:
             break
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -109,7 +112,8 @@ if __name__ == "__main__":
     V = np.dstack(V)
     
     M, m, n = flatten(V)
-    lamb = 1 / math.sqrt(max(M.shape))
+    lamb = 1 / math.sqrt(max(M.shape)) * 50
+    # print(lamb)
     L, S, ranks, rhos = fast_pcp(M, lamb)
 
     # outlier

@@ -1,8 +1,9 @@
 """DeHz and Fast DeHz"""
 
+import argparse
+import heapq
 import numpy as np
 import cv2 as cv
-import argparse
 
 
 def dehz(im, w=0.8):
@@ -13,11 +14,8 @@ def dehz(im, w=0.8):
 
     # invert
     L_inv = 1 - L
-    S = np.sum(R, axis=2)
+    S = np.sum(L_inv, axis=2)
     num = int(S.size * 0.002) # empirical
-
-    kernel = np.ones((7,7), np.uint8)
-    L_inv = cv.erode(L_inv, kernel)
 
     # calculate global atmosphere light A
     M = np.min(L_inv, axis=2)
@@ -30,19 +28,12 @@ def dehz(im, w=0.8):
 
     A = np.ones(3, dtype=float)
     T = 1 - w * L_inv[:, :, 2]
-    # for row in T:
-    #     for t in row:
-    #         if t < 0.5:
-    #             t *= 2
-
-    # Tp = cv.normalize(T, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
 
     # restore
-    R = np.zeros(L.shape, dtype=np.float32)
     for k in range(3):
-        R[:, :, k] = 1 - ((R[:, :, k] - A[k]) / T + A[k])
+        L_inv[:, :, k] = 1 - ((L_inv[:, :, k] - A[k]) / T + A[k])
 
-    return cv.normalize(R, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
+    return cv.normalize(L_inv, None, 0.0, 255.0, cv.NORM_MINMAX).astype(np.uint8)
 
 
 def fdehz(im, w=0.8):

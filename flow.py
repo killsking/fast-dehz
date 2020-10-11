@@ -2,14 +2,16 @@ import numpy as np
 import cv2 as cv
 import argparse
 
-from dehz import dehz
+from dehz import dehz, fdehz
 # from gamma import adjust_gamma
 
 parser = argparse.ArgumentParser()
 parser.add_argument('path')
+parser.add_argument('--fast', action='store_true')
 args = parser.parse_args()
 
 cap_v = cv.VideoCapture(args.path)
+f = fdehz if args.fast else dehz
 
 runtime = 0.0
 frame_count = 0
@@ -19,11 +21,9 @@ while(cap_v.isOpened()):
         break
 
     frame_count += 1
-    depth = cap_d.read()[1]
-    depth = cv.cvtColor(depth, cv.COLOR_BGR2GRAY)
 
     e1 = cv.getTickCount()
-    frame = dehz(frame, depth)
+    frame = f(frame)
     e2 = cv.getTickCount()
 
     cv.imshow('frame', frame)
@@ -34,6 +34,4 @@ while(cap_v.isOpened()):
 
 print('average runtime: %.5fs' % (runtime / frame_count))
 cap_v.release()
-if with_depth:
-    cap_d.release()
 cv.destroyAllWindows()
